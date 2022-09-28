@@ -9,8 +9,11 @@ class BasicSub:
             parser.add_argument(arg[0], arg[1], help = arg[2])
         self.args = parser.parse_args()
 
-        self.resdr = self.args.output
-        self.zipf = zipfile.ZipFile(f'{self.resdr}/images.zip', 'w', zipfile.ZIP_DEFLATED)
+        self.resdr = self.pathify(self.args.output)
 
     def submit(self):
         raise NotImplementedError
+
+    @staticmethod
+    def pathify(pth: str):
+        return pth.strip('/') + '/'
