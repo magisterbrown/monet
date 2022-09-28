@@ -7,6 +7,6 @@ from commands.pic_submission import PicSub
 if __name__=='__main__':
     #rs = RandSub()
     #rs = MonetToVec()
-    #rs = PicSub()
-    rs = RateSub()
+    rs = PicSub()
+    #rs = RateSub()
     rs.submit()
