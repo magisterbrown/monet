@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 from itertools import chain
-import glob
 
+import glob
 def explore_dir(path: str):
     """Discoveres packages in all directories of the folder
         returns:
@@ -22,28 +22,4 @@ def explore_dir(path: str):
         packages += new_packages
 
     return packages, package_dirs
-
-exceptions = [
-        '@ file',
-        ]
-
-packages, package_dirs = explore_dir('submodules')
-packages += find_packages()
-
-with open('requirements.txt', 'r') as f:
-    deps = f.readlines()
-    for exc in exceptions:
-        deps = list(filter(lambda x:not (exc in x), deps))
-
-    global_pack = deps
-
-setup(name='monart',
-      version='1.0',
-      description='',
-      author='magisterbrownie',
-      author_email='magisterbrownie@gmail.com',
-      url='',
-      packages=packages,
-      package_dir = package_dirs,
-      install_requires=global_pack
-     )
+print(explore_dir('submodules'))
