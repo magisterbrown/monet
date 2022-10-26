@@ -11,7 +11,9 @@ class Trainer:
         
     def init_model(self):
         self.ganmodel = ProgressiveGAN(useGPU=True,
-                             storeAVG=True)
+                             storeAVG=True,
+                             lambdaGP=10,
+                             epsilonD=0.001)
 
     def get_generator(self):
         return self.ganmodel.netG
@@ -30,7 +32,7 @@ class Trainer:
 
     def train_one_epoch(self, dl, ganmodel):
         for key, data in enumerate(dl):
-            ganmodel.optimizeParameters(data.to(torch.float32))
+            losses = ganmodel.optimizeParameters(data.to(torch.float32))
             if key%30==29:
                 print(key)
 

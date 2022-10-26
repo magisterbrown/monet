@@ -5,6 +5,7 @@ from commands.pic_submission import PicSub
 from commands.eval_monet import MonetEval
 from commands.train_pgan import TrainPgan
 from commands.gen_something import Generate
+from commands.tarwr import TarCreate
 
 
 if __name__=='__main__':
@@ -14,5 +15,6 @@ if __name__=='__main__':
     #rs = RateSub()
     #rs = MonetEval()
     #rs = TrainPgan()
-    rs = Generate()
+    #rs = Generate()
+    rs = TarCreate()
     rs.submit()
