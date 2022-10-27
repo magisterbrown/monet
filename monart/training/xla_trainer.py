@@ -7,6 +7,8 @@ import cv2
 import numpy as np
 import time
 
+        
+
 class XLAtrainer:
     def __init__(self, bucket: str, device):
         self.bucket = bucket
@@ -18,8 +20,8 @@ class XLAtrainer:
         self.ganmodel = XlaGan(useGPU=False,
                              storeAVG=True,
                              device=self.device,
-                             lambdaGP=0,#10,
-                             epsilonD=0)#0.001)
+                             lambdaGP=10,
+                             epsilonD=0.001)
         self.ganmodel.updateSolversDevice()
 
     def get_loader(self, size: int):
@@ -48,16 +50,23 @@ class XLAtrainer:
     
 
     def train_one_epoch(self, dl, ganmodel):
-        stepes = 5
+        rl = 0
+        fins = dict()
         for key, data in enumerate(dl):
             st = time.time()
             data = data.to(self.device)
             losses = ganmodel.optimizeParameters(data)
-            stepes-=1
-            print(losses)
-            print(f'ST: {stepes} secs: {time.time()-st}')
-            if stepes<=0:
-                break
+            for k,v in losses.items():
+                try:
+                    fins[k].append(v)
+                except:
+                    fins[k] = [v]
+            if(key>rl):
+                rl = key
+            print(f'ST: {key}/{rl} secs: {time.time()-st}')
+
+        for k,v in fins.items():
+            print(f'{k} {np.mean(v)}')
 
         return ganmodel
 

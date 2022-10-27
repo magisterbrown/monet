@@ -6,6 +6,7 @@ from commands.eval_monet import MonetEval
 from commands.train_pgan import TrainPgan
 from commands.gen_something import Generate
 from commands.tarwr import TarCreate
+from commands.xla_cm import TrainXLA
 
 
 if __name__=='__main__':
@@ -16,5 +17,6 @@ if __name__=='__main__':
     #rs = MonetEval()
     #rs = TrainPgan()
     #rs = Generate()
-    rs = TarCreate()
+    #rs = TarCreate()
+    rs = TrainXLA()
     rs.submit()
