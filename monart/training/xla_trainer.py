@@ -39,7 +39,6 @@ class XLAtrainer:
 
         for sc in scales:
             for i in range(next(eps)):
-                print(i)
                 self.ganmodel = self.train_one_epoch(dl, self.ganmodel)
             if sc:
                 self.ganmodel.addScale(sc)
@@ -56,7 +55,7 @@ class XLAtrainer:
             losses = ganmodel.optimizeParameters(data)
             stepes-=1
             print(losses)
-            print(f'{stepes} {time.time()-st}')
+            print(f'ST: {stepes} secs: {time.time()-st}')
             if stepes<=0:
                 break
 
