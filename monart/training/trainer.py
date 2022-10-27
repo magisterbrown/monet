@@ -10,10 +10,11 @@ class Trainer:
         self.init_model()
         
     def init_model(self):
-        self.ganmodel = ProgressiveGAN(useGPU=True,
+        self.ganmodel = ProgressiveGAN(useGPU=False,
                              storeAVG=True,
-                             lambdaGP=10,
-                             epsilonD=0.001)
+                             lambdaGP=0,#10,
+                             epsilonD=0)#0.001)
+        self.ganmodel.updateSolversDevice()
 
     def get_generator(self):
         return self.ganmodel.netG
