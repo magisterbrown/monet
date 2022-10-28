@@ -10,8 +10,9 @@ import time
         
 
 class XLAtrainer:
-    def __init__(self, bucket: str, device):
+    def __init__(self, bucket: str, device, save_pth: str):
         self.bucket = bucket
+        self.save_pth = save_pth
         self.size = 4
         self.device = device
         self.init_model()
@@ -40,13 +41,15 @@ class XLAtrainer:
         eps = iter(epochs_at_step)
 
         for sc in scales:
+            break
             for i in range(next(eps)):
                 self.ganmodel = self.train_one_epoch(dl, self.ganmodel)
             if sc:
                 self.ganmodel.addScale(sc)
                 self.size*=2
                 dl = self.get_loader(self.size)
-            break
+
+        xm.save(self.ganmodel.netG.state_dict(), self.save_pth)
     
 
     def train_one_epoch(self, dl, ganmodel):
