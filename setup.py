@@ -25,6 +25,7 @@ def explore_dir(path: str):
 
 exceptions = [
         '@ file',
+        'matplotlib',
         ]
 
 packages, package_dirs = explore_dir('submodules')

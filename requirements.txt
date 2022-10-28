@@ -26,7 +26,6 @@ gcs-oauth2-boto-plugin==3.0
 google-apitools==0.5.32
 google-auth==2.13.0
 google-reauth==0.1.1
-gsutil==5.15
 h5py==3.7.0
 httplib2==0.20.4
 idna==3.4
