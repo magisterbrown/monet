@@ -11,9 +11,11 @@ class TrainXLA(BasicCommand):
         self.add_arg('s','save','path to save pth')
         super().__init__()
         copy_process(self.args.pid)
-        bucket = 'gs://monet-cool-gan/monet_wds.tar'
+        self.bucket = 'gs://monet-cool-gan/'
+        archive = f'{self.bucket}monet_wds.tar'
         device = xm.xla_device()
-        self.trainer = XLAtrainer(bucket, device=device, save_pth=self.args.save)
+        self.trainer = XLAtrainer(archive, device=device, save_pth=self.args.save)
 
     def submit(self):
         self.trainer.train()
+        os.system(f'gsutil cp {self.args.save} {self.bucket}')

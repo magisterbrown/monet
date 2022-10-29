@@ -1,5 +1,6 @@
 import torch
 import glob
+import time
 import webdataset as wds
 import torch_xla.core.xla_model as xm
 from models.gan_xla import XlaGan
@@ -33,22 +34,22 @@ class XLAtrainer:
         return loader
 
     def train(self, scales: list = [512, 512, 512, 512, 256, 128, 64, 32, 16]):
-        scales = [512, 512, 512]
+        scales = [512, 512, 512, 512, 256]
         scales.append(None)
         dl = self.get_loader(self.size)
-        epochs_at_step = [1,2,3]
+        epochs_at_step = [7,11,11,14,14,17]
         assert len(epochs_at_step)>=len(scales)-1
         eps = iter(epochs_at_step)
 
-        for sc in scales:
-            break
+        for key, sc in enumerate(scales):
             for i in range(next(eps)):
+                stt = time.time()
                 self.ganmodel = self.train_one_epoch(dl, self.ganmodel)
+                print(f'EPoch {i} scale {key} time {time.time()-stt}')
             if sc:
                 self.ganmodel.addScale(sc)
                 self.size*=2
                 dl = self.get_loader(self.size)
-
         xm.save(self.ganmodel.netG.state_dict(), self.save_pth)
     
 
@@ -66,7 +67,8 @@ class XLAtrainer:
                     fins[k] = [v]
             if(key>rl):
                 rl = key
-            print(f'ST: {key}/{rl} secs: {time.time()-st}')
+            if(key<1):
+                print(f'ST: {key}/{rl} secs: {time.time()-st}')
 
         for k,v in fins.items():
             print(f'{k} {np.mean(v)}')
