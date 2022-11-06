@@ -37,6 +37,7 @@ with open('requirements.txt', 'r') as f:
         deps = list(filter(lambda x:not (exc in x), deps))
 
     global_pack = deps
+    global_pack = list()
 
 setup(name='monart',
       version='1.0',
