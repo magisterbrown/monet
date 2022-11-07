@@ -9,6 +9,7 @@ import numpy as np
 import time
 import torch_xla.core.xla_model as xm
 import torch_xla.distributed.xla_multiprocessing as xmp
+from torch import multiprocessing as mp
 
         
 
@@ -77,6 +78,18 @@ class XLAtrainer:
 
         return ganmodel
 
+def dict_comb_mean(dicts: list):
+    fins = dict()
+    for k,v in dicts.items():
+        try:
+            fins[k].append(v)
+        except:
+            fins[k] = [v]
+    for k,v in fins.items():
+        fins[k] = np.mean(v)
+    return fins
+
+
 class XLAMultiTrainer:
     def __init__(self):
         self.flags = dict()
@@ -95,24 +108,23 @@ class XLAMultiTrainer:
 
 
     @classmethod
-    def para_train(cls, index, flags):
+    def para_train(cls, index, flags, que):
         torch.manual_seed(flags['seed'])
         loader = cls.get_dl(4)
         device = xm.xla_device()  
         model = cls.init_model(device)
         for i in range(3):
-            model = cls.train_one_epoch(loader, model, device) 
+            model = cls.train_one_epoch(loader, model, device, que) 
 
     @classmethod
-    def train_one_epoch(cls, dl, ganmodel, device):
+    def train_one_epoch(cls, dl, ganmodel, device, que):
 
         for key, data in enumerate(dl):
             st = time.time()
             data = data.to(device)
             print(data.shape)
             losses = ganmodel.optimizeParameters(data)
-            if xm.is_master_ordinal():
-                print(losses)
+            que.put(losses)
 
         return ganmodel
 
@@ -127,7 +139,29 @@ class XLAMultiTrainer:
         return loader
 
     def train(self):
-        xmp.spawn(self.para_train, args=(self.flags,), nprocs=8, start_method='fork')
+        print('Pre train')
+        que = mp.Queue()
+        p1 = mp.Process(target=printer, args=(que,))
+        p1.start()
+        xmp.spawn(self.para_train, args=(self.flags, que), nprocs=8, start_method='fork')
+        que.put('out')
+        p1.join()
+
+import time
+def printer(que):
+    res = list()
+    while True:
+        if not que.empty():
+            val = que.get()
+            if val=='out':
+                print('oUt')
+                return 0
+            res.append(que.get()) 
+            print(res,flush=True)
+        if len(res)>=8:
+            alls = dict_comb_mean(res)
+            print(alls, flush=True)
+            res=[]
 
 
 class Allproc:
