@@ -1,4 +1,4 @@
-from .base_command import BasicCommand
+from .base_command import BasicCommand, NewBasicCommand
 from monart.training.xla_trainer import XLAtrainer
 from monart.copy_env import copy_process
 import torch_xla.core.xla_model as xm
@@ -20,7 +20,11 @@ class TrainXLA(BasicCommand):
         self.trainer.train()
         os.system(f'gsutil cp {self.args.save} {self.bucket}')
 
-class TrainMultiXLA():
+class TrainMultiXLA(NewBasicCommand):
+    def __init__(self, inpute):
+        self.add_arg('p','pid','process id to copy')
+        super().__init__(inpute)
     def submit(self):
+        print(self.args)
         print('submit')
     

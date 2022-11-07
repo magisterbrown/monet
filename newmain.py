@@ -22,7 +22,7 @@ if __name__=='__main__':
         subcommand = sys.argv[1]
 
         Comador = boss.get_command(subcommand) 
-        task = Comador()
+        task = Comador(sys.argv[2:])
         task.submit()
     except IndexError:
         print('Options: ')
