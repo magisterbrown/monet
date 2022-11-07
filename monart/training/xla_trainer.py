@@ -7,6 +7,8 @@ from models.gan_xla import XlaGan
 import cv2
 import numpy as np
 import time
+import torch_xla.core.xla_model as xm
+import torch_xla.distributed.xla_multiprocessing as xmp
 
         
 
@@ -74,6 +76,43 @@ class XLAtrainer:
             print(f'{k} {np.mean(v)}')
 
         return ganmodel
+
+class XLAMultiTrainer:
+    def __init__(self):
+        self.flags = dict()
+        self.flags['seed'] = 420
+    
+    @staticmethod
+    def init_model():
+        ganmodel = XlaGan(useGPU=False,
+                             storeAVG=True,
+                             device=self.device,
+                             lambdaGP=10,
+                             epsilonD=0.001)
+        ganmodel.updateSolversDevice()
+
+        return ganmodel
+
+
+    @staticmethod
+    def para_train(index, flags):
+        torch.manual_seed(flags['seed'])
+        loader = self.get_dl(4)
+        model = self.init_model()
+        for i in range(3):
+        pass
+
+    @staticmethod
+    def get_dl(ims: int):
+        shard = f'gs://monet-cool-gan/shards_monet/monet_shard_{xm.get_ordinal()}.tar'
+        proc = Allproc('npy',ims)
+        ds = wds.WebDataset(shard).decode().map(proc.proc)
+        loader = torch.utils.data.DataLoader(ds, batch_size=4, drop_last=True)
+
+        return loader
+
+    def train(self):
+        xmp.spawn(self.para_train, args=(self.flags,), nprocs=8, start_method='fork')
 
 
 class Allproc:
