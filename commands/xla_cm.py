@@ -1,5 +1,5 @@
 from .base_command import BasicCommand, NewBasicCommand
-from monart.training.xla_trainer import XLAtrainer
+from monart.training.xla_trainer import XLAtrainer, XLAMultiTrainer
 from monart.copy_env import copy_process
 import torch_xla.core.xla_model as xm
 import os
@@ -24,7 +24,8 @@ class TrainMultiXLA(NewBasicCommand):
     def __init__(self, inpute):
         self.add_arg('p','pid','process id to copy')
         super().__init__(inpute)
+        copy_process(self.args.pid)
+
+        self.trainer = XLAMultiTrainer()
     def submit(self):
-        print(self.args)
-        print('submit')
-    
+        self.trainer.train()

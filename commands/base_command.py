@@ -26,7 +26,7 @@ class NewBasicCommand:
         parser = ArgumentParser()
         for arg in self.arguments:
             parser.add_argument(arg[0], arg[1], help = arg[2])
-        self.args = parser.parse_known_args(inpute)
+        self.args = parser.parse_args(inpute)
 
     def add_arg(self, flag: str, name: str, comment: str):
         self.arguments.append((f'-{flag}',f'--{name}',comment))

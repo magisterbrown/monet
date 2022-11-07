@@ -82,11 +82,11 @@ class XLAMultiTrainer:
         self.flags = dict()
         self.flags['seed'] = 420
     
-    @staticmethod
-    def init_model():
+    @classmethod
+    def init_model(cls,device):
         ganmodel = XlaGan(useGPU=False,
                              storeAVG=True,
-                             device=self.device,
+                             device=device,
                              lambdaGP=10,
                              epsilonD=0.001)
         ganmodel.updateSolversDevice()
@@ -94,28 +94,31 @@ class XLAMultiTrainer:
         return ganmodel
 
 
-    @staticmethod
-    def para_train(index, flags):
+    @classmethod
+    def para_train(cls, index, flags):
         torch.manual_seed(flags['seed'])
-        loader = self.get_dl(4)
-        model = self.init_model()
+        loader = cls.get_dl(4)
         device = xm.xla_device()  
+        model = cls.init_model(device)
         for i in range(3):
-            model = self.train_one_epoch(loader, model, device) 
+            model = cls.train_one_epoch(loader, model, device) 
 
-    @staticmethod
-    def train_one_epoch(dl, ganmodel, device):
+    @classmethod
+    def train_one_epoch(cls, dl, ganmodel, device):
 
         for key, data in enumerate(dl):
             st = time.time()
             data = data.to(device)
+            print(data.shape)
             losses = ganmodel.optimizeParameters(data)
+            if xm.is_master_ordinal():
+                print(losses)
 
         return ganmodel
 
 
-    @staticmethod
-    def get_dl(ims: int):
+    @classmethod
+    def get_dl(cls, ims: int):
         shard = f'gs://monet-cool-gan/shards_monet/monet_shard_{xm.get_ordinal()}.tar'
         proc = Allproc('npy',ims)
         ds = wds.WebDataset(shard).decode().map(proc.proc)
