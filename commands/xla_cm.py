@@ -19,3 +19,8 @@ class TrainXLA(BasicCommand):
     def submit(self):
         self.trainer.train()
         os.system(f'gsutil cp {self.args.save} {self.bucket}')
+
+class TrainMultiXLA():
+    def submit(self):
+        print('submit')
+    

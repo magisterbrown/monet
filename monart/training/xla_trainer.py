@@ -99,8 +99,20 @@ class XLAMultiTrainer:
         torch.manual_seed(flags['seed'])
         loader = self.get_dl(4)
         model = self.init_model()
+        device = xm.xla_device()  
         for i in range(3):
-        pass
+            model = self.train_one_epoch(loader, model, device) 
+
+    @staticmethod
+    def train_one_epoch(dl, ganmodel, device):
+
+        for key, data in enumerate(dl):
+            st = time.time()
+            data = data.to(device)
+            losses = ganmodel.optimizeParameters(data)
+
+        return ganmodel
+
 
     @staticmethod
     def get_dl(ims: int):
