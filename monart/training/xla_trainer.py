@@ -11,6 +11,9 @@ import torch_xla.core.xla_model as xm
 import torch_xla.distributed.xla_multiprocessing as xmp
 from torch import multiprocessing as mp
 
+import torch_xla.utils.serialization as xser
+
+
         
 
 class XLAtrainer:
@@ -80,11 +83,12 @@ class XLAtrainer:
 
 def dict_comb_mean(dicts: list):
     fins = dict()
-    for k,v in dicts.items():
-        try:
-            fins[k].append(v)
-        except:
-            fins[k] = [v]
+    for d in dicts:
+        for k,v in d.items():
+            try:
+                fins[k].append(v)
+            except:
+                fins[k] = [v]
     for k,v in fins.items():
         fins[k] = np.mean(v)
     return fins
@@ -115,6 +119,10 @@ class XLAMultiTrainer:
         model = cls.init_model(device)
         for i in range(3):
             model = cls.train_one_epoch(loader, model, device, que) 
+            break
+        if xm.is_master_ordinal():
+            print('saving')
+            xser.save(model.netG.state_dict(), 'data/multr.pth')
 
     @classmethod
     def train_one_epoch(cls, dl, ganmodel, device, que):
@@ -122,9 +130,10 @@ class XLAMultiTrainer:
         for key, data in enumerate(dl):
             st = time.time()
             data = data.to(device)
-            print(data.shape)
             losses = ganmodel.optimizeParameters(data)
             que.put(losses)
+            break
+        
 
         return ganmodel
 
@@ -157,11 +166,10 @@ def printer(que):
                 print('oUt')
                 return 0
             res.append(que.get()) 
-            print(res,flush=True)
         if len(res)>=8:
             alls = dict_comb_mean(res)
-            print(alls, flush=True)
-            res=[]
+            print(alls)
+            res=list()
 
 
 class Allproc:
