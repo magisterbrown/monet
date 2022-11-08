@@ -112,17 +112,18 @@ class XLAMultiTrainer:
 
 
     @classmethod
-    def para_train(cls, index, flags, que):
+    def para_train(cls, flags, que, model):
         torch.manual_seed(flags['seed'])
         loader = cls.get_dl(4)
         device = xm.xla_device()  
-        model = cls.init_model(device)
         for i in range(3):
             model = cls.train_one_epoch(loader, model, device, que) 
             break
+        #xm.mark_step()
+        #xm.rendezvous('init')
         if xm.is_master_ordinal():
             print('saving')
-            xser.save(model.netG.state_dict(), 'data/multr.pth')
+            #xser.save(model.netG.state_dict(), 'data/multr.pth')
 
     @classmethod
     def train_one_epoch(cls, dl, ganmodel, device, que):
@@ -152,8 +153,16 @@ class XLAMultiTrainer:
         que = mp.Queue()
         p1 = mp.Process(target=printer, args=(que,))
         p1.start()
-        xmp.spawn(self.para_train, args=(self.flags, que), nprocs=8, start_method='fork')
+        mcwrap = xmp.MpModelWrapper(self.init_model())
+
+        def _mp_fn(index, flags, que):
+            
+            self.para_train(flags, que, mcwrap)
+            print('mp end')
+        xmp.spawn(_mp_fn, args=(self.flags, que), nprocs=8, start_method='fork')
+        import pdb; pdb.set_trace()
         que.put('out')
+
         p1.join()
 
 import time
