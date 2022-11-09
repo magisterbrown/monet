@@ -100,13 +100,11 @@ class XLAMultiTrainer:
         self.flags['seed'] = 420
     
     @classmethod
-    def init_model(cls,device):
+    def init_model(cls):
         ganmodel = XlaGan(useGPU=False,
                              storeAVG=True,
-                             device=device,
                              lambdaGP=10,
                              epsilonD=0.001)
-        ganmodel.updateSolversDevice()
 
         return ganmodel
 
@@ -153,14 +151,15 @@ class XLAMultiTrainer:
         que = mp.Queue()
         p1 = mp.Process(target=printer, args=(que,))
         p1.start()
-        mcwrap = xmp.MpModelWrapper(self.init_model())
+        model = self.init_model()
 
         def _mp_fn(index, flags, que):
-            
-            self.para_train(flags, que, mcwrap)
+            model.device = xm.xla_device()  
+            model.updateSolversDevice()
+
+            self.para_train(flags, que, model)
             print('mp end')
         xmp.spawn(_mp_fn, args=(self.flags, que), nprocs=8, start_method='fork')
-        import pdb; pdb.set_trace()
         que.put('out')
 
         p1.join()
