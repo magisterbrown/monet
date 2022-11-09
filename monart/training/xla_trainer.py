@@ -129,7 +129,6 @@ class XLAMultiTrainer:
 
         for key, data in enumerate(dl):
             st = time.time()
-            print(data.shape)
             data = data.to(device)
             losses = ganmodel.optimizeParameters(data)
             que.put(losses)
@@ -176,9 +175,13 @@ class XLAMultiTrainer:
             print('mp end')
         xmp.spawn(_mp_fn, args=(self.flags, que), nprocs=8, start_method='fork')
         que.put('out')
-        import pdb;pdb.set_trace();
         p1.join()
-        xm.save(gnet._model.state_dict(), 'data/alls.pth')
+        device = torch.device("cpu")
+        gnet.to(device)
+        dct = gnet._model.state_dict()
+        torch.save(dct, 'data/lul.pth')
+        print('savererd')
+        #xm.save(gnet._model.state_dict(), 'data/alls.pth')
     
 
 import time
