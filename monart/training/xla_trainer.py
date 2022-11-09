@@ -100,10 +100,11 @@ class XLAMultiTrainer:
         self.flags['seed'] = 420
     
     @classmethod
-    def init_model(cls):
+    def init_model(cls,device=None):
         ganmodel = XlaGan(useGPU=False,
                              storeAVG=True,
                              lambdaGP=10,
+                             device=device,
                              epsilonD=0.001)
 
         return ganmodel
@@ -128,10 +129,10 @@ class XLAMultiTrainer:
 
         for key, data in enumerate(dl):
             st = time.time()
+            print(data.shape)
             data = data.to(device)
             losses = ganmodel.optimizeParameters(data)
             que.put(losses)
-            break
         
 
         return ganmodel
@@ -151,18 +152,34 @@ class XLAMultiTrainer:
         que = mp.Queue()
         p1 = mp.Process(target=printer, args=(que,))
         p1.start()
-        model = self.init_model()
+        model = XlaGan(useGPU=False,
+                             storeAVG=True,
+                             lambdaGP=10,
+                             epsilonD=0.001)
+
+        gnet = xmp.MpModelWrapper(model.netG)
+        dnet = xmp.MpModelWrapper(model.netD)
 
         def _mp_fn(index, flags, que):
-            model.device = xm.xla_device()  
+            device = xm.xla_device()  
+            model = XlaGan(gnet=gnet,
+                            dnet=dnet,
+                            useGPU=False,
+                             storeAVG=True,
+                             lambdaGP=10,
+                             device=device,
+                             epsilonD=0.001)
+
             model.updateSolversDevice()
 
             self.para_train(flags, que, model)
             print('mp end')
         xmp.spawn(_mp_fn, args=(self.flags, que), nprocs=8, start_method='fork')
         que.put('out')
-
+        import pdb;pdb.set_trace();
         p1.join()
+        xm.save(gnet._model.state_dict(), 'data/alls.pth')
+    
 
 import time
 def printer(que):
