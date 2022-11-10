@@ -107,6 +107,8 @@ class XLAMultiTrainer:
         device = xm.xla_device()  
         for i in range(3):
             model = cls.train_one_epoch(loader, model, device, que) 
+            if xm.is_master_ordinal():
+                que.put('print')
             break
 
     @classmethod
@@ -115,11 +117,9 @@ class XLAMultiTrainer:
         for key, data in enumerate(dl):
             st = time.time()
             data = data.to(device)
-            print(data.shape)
             st = time.time()
             losses = ganmodel.optimizeParameters(data)
             que.put(losses)
-        
 
         return ganmodel
 
@@ -157,18 +157,14 @@ class XLAMultiTrainer:
                              lambdaGP=10,
                              device=device,
                              epsilonD=0.001)
-            #model.updateSolversDevice(buildAvG=False)
 
             self.para_train(flags, que, model)
-        print('prespawn')
         xmp.spawn(_mp_fn, args=(self.flags, que), nprocs=8, start_method='fork')
         que.put('out')
         p1.join()
         device = torch.device("cpu")
-        GNET.to(device)
-        dct = GNET._model.state_dict()
-        print('Saveve')
-        torch.save(dct, self.save_pth)
+        saveg = GNET.to(device)
+        torch.save(saveg.state_dict(), self.save_pth)
     
 
 import time
@@ -180,12 +176,13 @@ def printer(que):
             if val=='out':
                 print('oUt')
                 return 0
-            res.append(que.get()) 
-        if len(res)>=8:
-            alls = dict_comb_mean(res)
-            print(alls)
-            res=list()
-
+            elif val=='print':
+                print(len(res))
+                alls = dict_comb_mean(res)
+                print(alls)
+                res=list()
+            else:
+                res.append(val) 
 
 class Allproc:
     def __init__(self, key: str, side: int):
