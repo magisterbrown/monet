@@ -98,6 +98,12 @@ class XLAMultiTrainer:
     def __init__(self, save_pth):
         self.flags = dict()
         self.flags['seed'] = 420
+        scales = [512 ]
+        scales.append(None)
+        self.flags['scales'] = scales
+        epochs_at_scale = [3,3]
+        self.flags['epochs_at_scale'] = epochs_at_scale 
+        assert len(epochs_at_scale)>=len(scales)
         self.save_pth = save_pth
     
     @classmethod
@@ -105,11 +111,12 @@ class XLAMultiTrainer:
         torch.manual_seed(flags['seed'])
         loader = cls.get_dl(4)
         device = xm.xla_device()  
-        for i in range(3):
-            model = cls.train_one_epoch(loader, model, device, que) 
-            if xm.is_master_ordinal():
-                que.put('print')
-            break
+        epochs = iter(flags['epochs_at_scale'])
+        for key, sc in enumerate(flags['scales']):
+            for i in range(next(epochs)):
+                model = cls.train_one_epoch(loader, model, device, que) 
+                if xm.is_master_ordinal():
+                    que.put('print')
 
     @classmethod
     def train_one_epoch(cls, dl, ganmodel, device, que):
