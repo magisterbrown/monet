@@ -109,7 +109,8 @@ class XLAMultiTrainer:
     @classmethod
     def para_train(cls, flags, que, model):
         torch.manual_seed(flags['seed'])
-        loader = cls.get_dl(4)
+        size=4
+        loader = cls.get_dl(size)
         device = xm.xla_device()  
         epochs = iter(flags['epochs_at_scale'])
         for key, sc in enumerate(flags['scales']):
@@ -117,16 +118,23 @@ class XLAMultiTrainer:
                 model = cls.train_one_epoch(loader, model, device, que) 
                 if xm.is_master_ordinal():
                     que.put('print')
+            if sc:
+                model.addScale(sc)
+                size*=2
+                loader = cls.get_dl(size)
 
     @classmethod
     def train_one_epoch(cls, dl, ganmodel, device, que):
 
         for key, data in enumerate(dl):
-            st = time.time()
+            
+            if xm.is_master_ordinal() and key == 0:
+                st = time.time()
             data = data.to(device)
-            st = time.time()
             losses = ganmodel.optimizeParameters(data)
             que.put(losses)
+            if xm.is_master_ordinal() and key == 0:
+                print(f'First step time {time.time()-st}')
 
         return ganmodel
 
