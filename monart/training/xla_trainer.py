@@ -98,10 +98,10 @@ class XLAMultiTrainer:
     def __init__(self, save_pth):
         self.flags = dict()
         self.flags['seed'] = 420
-        scales = [512 ]
+        scales = [512 ,512,512, 512]
         scales.append(None)
         self.flags['scales'] = scales
-        epochs_at_scale = [3,3]
+        epochs_at_scale = [3,3,3,3,3]
         self.flags['epochs_at_scale'] = epochs_at_scale 
         assert len(epochs_at_scale)>=len(scales)
         self.save_pth = save_pth
