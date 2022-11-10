@@ -10,7 +10,7 @@ import time
 import torch_xla.core.xla_model as xm
 import torch_xla.distributed.xla_multiprocessing as xmp
 from torch import multiprocessing as mp
-
+import time
 import torch_xla.utils.serialization as xser
 
 
@@ -115,9 +115,10 @@ class XLAMultiTrainer:
         for key, data in enumerate(dl):
             st = time.time()
             data = data.to(device)
+            print(data.shape)
+            st = time.time()
             losses = ganmodel.optimizeParameters(data)
             que.put(losses)
-            break
         
 
         return ganmodel
@@ -142,14 +143,14 @@ class XLAMultiTrainer:
                              lambdaGP=10,
                              epsilonD=0.001)
 
-        gnet = xmp.MpModelWrapper(model.netG)
-        dnet = xmp.MpModelWrapper(model.netD)
+        GNET = xmp.MpModelWrapper(model.netG)
+        DNET = xmp.MpModelWrapper(model.netD)
 
-        def _mp_fn(index, flags, que, gnet, dnet):
+        def _mp_fn(index, flags, que):
             device = xm.xla_device()  
-            gnet = gnet.to(device)
-            dnet = dnet.to(device)
-            model = XlaGan(gnet=gnet,
+            genn = GNET.to(device)
+            dnet = DNET.to(device)
+            model = XlaGan(gnet=genn,
                             dnet=dnet,
                             useGPU=False,
                              storeAVG=True,
@@ -160,12 +161,12 @@ class XLAMultiTrainer:
 
             self.para_train(flags, que, model)
         print('prespawn')
-        xmp.spawn(_mp_fn, args=(self.flags, que, gnet, dnet), nprocs=8, start_method='fork')
+        xmp.spawn(_mp_fn, args=(self.flags, que), nprocs=8, start_method='fork')
         que.put('out')
         p1.join()
         device = torch.device("cpu")
-        gnet.to(device)
-        dct = gnet._model.state_dict()
+        GNET.to(device)
+        dct = GNET._model.state_dict()
         print('Saveve')
         torch.save(dct, self.save_pth)
     
