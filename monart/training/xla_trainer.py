@@ -117,6 +117,7 @@ class XLAMultiTrainer:
             data = data.to(device)
             losses = ganmodel.optimizeParameters(data)
             que.put(losses)
+            break
         
 
         return ganmodel
@@ -144,9 +145,10 @@ class XLAMultiTrainer:
         gnet = xmp.MpModelWrapper(model.netG)
         dnet = xmp.MpModelWrapper(model.netD)
 
-        def _mp_fn(index, flags, que):
+        def _mp_fn(index, flags, que, gnet, dnet):
             device = xm.xla_device()  
-            print('FalSed',flush=True)
+            gnet = gnet.to(device)
+            dnet = dnet.to(device)
             model = XlaGan(gnet=gnet,
                             dnet=dnet,
                             useGPU=False,
@@ -154,17 +156,17 @@ class XLAMultiTrainer:
                              lambdaGP=10,
                              device=device,
                              epsilonD=0.001)
-            print('FalSed',flush=True)
             #model.updateSolversDevice(buildAvG=False)
 
             self.para_train(flags, que, model)
         print('prespawn')
-        xmp.spawn(_mp_fn, args=(self.flags, que), nprocs=8, start_method='fork')
+        xmp.spawn(_mp_fn, args=(self.flags, que, gnet, dnet), nprocs=8, start_method='fork')
         que.put('out')
         p1.join()
         device = torch.device("cpu")
         gnet.to(device)
         dct = gnet._model.state_dict()
+        print('Saveve')
         torch.save(dct, self.save_pth)
     
 
