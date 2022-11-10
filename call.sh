@@ -4,4 +4,4 @@
 #python3 main.py -p data/monet_wds.tar -l data/monet_jpg/ #Create tar ds
 #python3 main.py -p 57 -s data/xlt1.pth #Train xla
 #python3 main.py -p data/xlt1.pth -o data/ -m x #Generate something
-python3 newmain.py train_mul_xla -p 19 #Train muticore
+python3 newmain.py train_mul_xla -s data/multr.pth -p 19 #Train muticore

@@ -23,9 +23,10 @@ class TrainXLA(BasicCommand):
 class TrainMultiXLA(NewBasicCommand):
     def __init__(self, inpute):
         self.add_arg('p','pid','process id to copy')
+        self.add_arg('s','save','path to save pth')
         super().__init__(inpute)
         copy_process(self.args.pid)
 
-        self.trainer = XLAMultiTrainer()
+        self.trainer = XLAMultiTrainer(save_pth=self.args.save)
     def submit(self):
         self.trainer.train()

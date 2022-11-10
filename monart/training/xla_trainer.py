@@ -95,21 +95,11 @@ def dict_comb_mean(dicts: list):
 
 
 class XLAMultiTrainer:
-    def __init__(self):
+    def __init__(self, save_pth):
         self.flags = dict()
         self.flags['seed'] = 420
+        self.save_pth = save_pth
     
-    @classmethod
-    def init_model(cls,device=None):
-        ganmodel = XlaGan(useGPU=False,
-                             storeAVG=True,
-                             lambdaGP=10,
-                             device=device,
-                             epsilonD=0.001)
-
-        return ganmodel
-
-
     @classmethod
     def para_train(cls, flags, que, model):
         torch.manual_seed(flags['seed'])
@@ -118,11 +108,6 @@ class XLAMultiTrainer:
         for i in range(3):
             model = cls.train_one_epoch(loader, model, device, que) 
             break
-        #xm.mark_step()
-        #xm.rendezvous('init')
-        if xm.is_master_ordinal():
-            print('saving')
-            #xser.save(model.netG.state_dict(), 'data/multr.pth')
 
     @classmethod
     def train_one_epoch(cls, dl, ganmodel, device, que):
@@ -161,6 +146,7 @@ class XLAMultiTrainer:
 
         def _mp_fn(index, flags, que):
             device = xm.xla_device()  
+            print('FalSed',flush=True)
             model = XlaGan(gnet=gnet,
                             dnet=dnet,
                             useGPU=False,
@@ -168,20 +154,18 @@ class XLAMultiTrainer:
                              lambdaGP=10,
                              device=device,
                              epsilonD=0.001)
-
-            model.updateSolversDevice()
+            print('FalSed',flush=True)
+            #model.updateSolversDevice(buildAvG=False)
 
             self.para_train(flags, que, model)
-            print('mp end')
+        print('prespawn')
         xmp.spawn(_mp_fn, args=(self.flags, que), nprocs=8, start_method='fork')
         que.put('out')
         p1.join()
         device = torch.device("cpu")
         gnet.to(device)
         dct = gnet._model.state_dict()
-        torch.save(dct, 'data/lul.pth')
-        print('savererd')
-        #xm.save(gnet._model.state_dict(), 'data/alls.pth')
+        torch.save(dct, self.save_pth)
     
 
 import time
