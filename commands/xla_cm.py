@@ -27,6 +27,8 @@ class TrainMultiXLA(NewBasicCommand):
         super().__init__(inpute)
         copy_process(self.args.pid)
 
+        self.bucket = 'gs://monet-cool-gan/saves/'
         self.trainer = XLAMultiTrainer(save_pth=self.args.save)
     def submit(self):
         self.trainer.train()
+        os.system(f'gsutil cp {self.args.save} {self.bucket}')

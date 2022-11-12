@@ -98,10 +98,10 @@ class XLAMultiTrainer:
     def __init__(self, save_pth):
         self.flags = dict()
         self.flags['seed'] = 420
-        scales = [512 ,512,512, 512]
+        scales = [512]
         scales.append(None)
         self.flags['scales'] = scales
-        epochs_at_scale = [3,3,3,3,3]
+        epochs_at_scale = [2,2]
         self.flags['epochs_at_scale'] = epochs_at_scale 
         assert len(epochs_at_scale)>=len(scales)
         self.save_pth = save_pth
@@ -121,6 +121,8 @@ class XLAMultiTrainer:
             if sc:
                 model.addScale(sc)
                 size*=2
+                if xm.is_master_ordinal():
+                    print(f'New size {size}')
                 loader = cls.get_dl(size)
 
     @classmethod
@@ -160,6 +162,7 @@ class XLAMultiTrainer:
 
         GNET = xmp.MpModelWrapper(model.netG)
         DNET = xmp.MpModelWrapper(model.netD)
+        SAVE_PTH = self.save_pth
 
         def _mp_fn(index, flags, que):
             device = xm.xla_device()  
@@ -174,12 +177,13 @@ class XLAMultiTrainer:
                              epsilonD=0.001)
 
             self.para_train(flags, que, model)
+            if xm.is_master_ordinal():
+                device = torch.device("cpu")
+                genn = genn.to(device)
+                torch.save(genn.state_dict(), SAVE_PTH)
         xmp.spawn(_mp_fn, args=(self.flags, que), nprocs=8, start_method='fork')
         que.put('out')
         p1.join()
-        device = torch.device("cpu")
-        saveg = GNET.to(device)
-        torch.save(saveg.state_dict(), self.save_pth)
     
 
 import time
